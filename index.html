@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CarDuels - Étape par Étape</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+        }
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        video {
+            width: 100%;
+            border-radius: 8px;
+            background: #000;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #e50914;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 15px 0;
+        }
+        .status {
+            background: #2d2d2d;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>CarDuels 🏎️</h1>
+    
+    <div class="game-container">
+        <!-- Éléments de capture -->
+        <video id="camera-preview" autoplay playsinline></video>
+        <button id="btn-scan">📷 SCANNER LA CARTE</button>
+        <canvas id="capture-canvas" style="display: none;"></canvas>
+
+        <!-- Affichage des infos lues -->
+        <div class="status">
+            <div id="scan-status">Statut : Caméra en attente...</div>
+            <h3 id="car-title" style="color: #36a2eb; margin: 10px 0 0 0;"></h3>
+        </div>
+
+        <!-- Zone du graphique -->
+        <div>
+            <canvas id="duelChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chargement des bibliothèques nécessaires -->
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://jsdelivr.net"></script>
+    
+    <!-- Lien vers ton fichier logique -->
+    <script src="app.js"></script>
+</body>
+</html>
