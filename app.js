@@ -8,8 +8,8 @@ const ctx = canvas.getContext('2d');
 const scanStatus = document.getElementById('scan-status');
 const carTitle = document.getElementById('car-title');
 
-// Stats de l'adversaire pré-enregistrées (Aucune case vide)
-const opponentData = [320, 290, 145, 42]; 
+// Stats de l'adversaire pré-enregistrées
+const opponentData = [300, 250, 140, 55]; 
 
 // ==========================================
 // 2. CONTRÔLE DE LA CAMÉRA FLUX VIDÉO
@@ -25,7 +25,7 @@ async function startCamera() {
         scanStatus.innerText = "Statut : Caméra active. Alignez votre carte.";
     } catch (err) {
         console.error("Erreur d'accès à la caméra :", err);
-        scanStatus.innerText = "Erreur : " + err.message;
+        scanStatus.innerText = "Erreur caméra : " + err.message;
     }
 }
 
@@ -67,7 +67,7 @@ function parseCarData(rawText) {
 
     const nameMatch = rawText.match(/modèle\s*[:\s]*([^\n]+)/i) || rawText.match(/^([^\n]+)/);
     if (nameMatch) {
-        carData.name = nameMatch[0].trim();
+        carData.name = nameMatch[1].trim();
     }
 
     const hpMatch = cleanText.match(/(\d+)\s*ch/) || cleanText.match(/ch\s*[:\s]*(\d+)/);
@@ -107,7 +107,7 @@ function initDuelChart() {
                 },
                 {
                     label: 'Joueur (En attente...)',
-                    data: [0, 0, 0, 0], // Tableau initialisé proprement sans valeurs vides
+                    data: [0, 0, 0, 0], 
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 2
@@ -136,7 +136,6 @@ function updateChartWithScannedCar(carData) {
         carData.stats.acceleration * 10   
     ];
 
-    // Correction des index cibles du dataset Joueur (index 1)
     duelChart.data.datasets[1].label = carData.name;
     duelChart.data.datasets[1].data = normalizedStats;
     
@@ -147,8 +146,8 @@ function updateChartWithScannedCar(carData) {
 // 6. ÉVÉNEMENTS & ÉCOUTEURS
 // ==========================================
 window.addEventListener('DOMContentLoaded', () => {
-    initDuelChart(); // On lance d'abord le graphique
-    startCamera();   // Puis on appelle la caméra
+    initDuelChart(); 
+    startCamera();   
 });
 
 document.getElementById('btn-scan').addEventListener('click', async () => {
