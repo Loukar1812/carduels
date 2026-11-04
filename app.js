@@ -1,4 +1,6 @@
-// Variables pour l'interface graphique
+// ==========================================
+// 1. INITIALISATION & VARIABLES GLOBALES
+// ==========================================
 let duelChart = null;
 const video = document.getElementById('camera-preview');
 const canvas = document.getElementById('capture-canvas');
@@ -6,48 +8,55 @@ const ctx = canvas.getContext('2d');
 const scanStatus = document.getElementById('scan-status');
 const carTitle = document.getElementById('car-title');
 
-// Stats de l'adversaire pré-enregistrées
-// Format : [Puissance, Vitesse, Poids normalisé, Accélération normalisée]
-const opponentData =;
-// Fonction pour démarrer le flux vidéo de la caméra arrière
+// Stats de l'adversaire pré-enregistrées (Aucune case vide)
+const opponentData = [320, 290, 145, 42]; 
+
+// ==========================================
+// 2. CONTRÔLE DE LA CAMÉRA FLUX VIDÉO
+// ==========================================
 async function startCamera() {
     try {
+        console.log("Tentative de démarrage caméra...");
         const stream = await navigator.mediaDevices.getUserMedia({ 
             video: { facingMode: 'environment' }, 
             audio: false 
         });
         video.srcObject = stream;
-        scanStatus.innerText = "Statut : Caméra connectée. Prêt à scanner !";
+        scanStatus.innerText = "Statut : Caméra active. Alignez votre carte.";
     } catch (err) {
         console.error("Erreur d'accès à la caméra :", err);
-        scanStatus.innerText = "Erreur : Impossible d'activer la caméra.";
+        scanStatus.innerText = "Erreur : " + err.message;
     }
 }
-// Fonction prenant une photo instantanée et l'analysant avec Tesseract
+
+// ==========================================
+// 3. CAPTURE IMAGE & MOTEUR OCR (TESSERACT)
+// ==========================================
 async function scanCard() {
     if (!video.videoWidth) {
-        scanStatus.innerText = "Erreur : Caméra non prête.";
+        scanStatus.innerText = "Erreur : Flux vidéo indisponible.";
         return null;
     }
 
-    // On adapte le canvas à la taille réelle de la vidéo
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     
-    scanStatus.innerText = "Statut : Lecture de la carte en cours...";
+    scanStatus.innerText = "Statut : Analyse OCR en cours...";
 
     try {
-        // Tesseract analyse le canvas en français
         const result = await Tesseract.recognize(canvas, 'fra');
         return result.data.text;
     } catch (error) {
-        console.error("Erreur d'analyse OCR :", error);
-        scanStatus.innerText = "Erreur : Échec de la lecture de l'image.";
+        console.error("Erreur Tesseract OCR :", error);
+        scanStatus.innerText = "Erreur : Échec de la lecture optique.";
         return null;
     }
 }
-// Fonction de tri du texte brut reçu par l'OCR
+
+// ==========================================
+// 4. MOTEUR DE PARSING ET REGEX
+// ==========================================
 function parseCarData(rawText) {
     const cleanText = rawText.toLowerCase().replace(/\s+/g, ' ');
     
@@ -56,29 +65,31 @@ function parseCarData(rawText) {
         stats: { horsepower: 0, topSpeed: 0, weight: 0, acceleration: 0 }
     };
 
-    // 1. Recherche du nom
     const nameMatch = rawText.match(/modèle\s*[:\s]*([^\n]+)/i) || rawText.match(/^([^\n]+)/);
-    if (nameMatch && nameMatch) carData.name = nameMatch.trim();
+    if (nameMatch) {
+        carData.name = nameMatch[0].trim();
+    }
 
-    // 2. Recherche de la puissance (ex: 300 ch)
     const hpMatch = cleanText.match(/(\d+)\s*ch/) || cleanText.match(/ch\s*[:\s]*(\d+)/);
-    if (hpMatch) carData.stats.horsepower = parseInt(hpMatch, 10);
+    if (hpMatch) carData.stats.horsepower = parseInt(hpMatch[1], 10);
 
-    // 3. Recherche de la vitesse maximale (ex: 250 km/h)
     const speedMatch = cleanText.match(/(\d+)\s*km\/h/) || cleanText.match(/max\s*[:\s]*(\d+)/);
-    if (speedMatch) carData.stats.topSpeed = parseInt(speedMatch, 10);
+    if (speedMatch) carData.stats.topSpeed = parseInt(speedMatch[1], 10);
 
-    // 4. Recherche du poids (ex: 1200 kg)
     const weightMatch = cleanText.match(/(\d+)\s*kg/) || cleanText.match(/poids\s*[:\s]*(\d+)/);
-    if (weightMatch) carData.stats.weight = parseInt(weightMatch, 10);
+    if (weightMatch) carData.stats.weight = parseInt(weightMatch[1], 10);
 
-    // 5. Recherche du 0-100 km/h (ex: 5.4 s)
     const accMatch = cleanText.match(/(\d+(?:[.,]\d+)?)\s*s(?:ec)?/) || cleanText.match(/0-100\s*[:\s]*(\d+(?:[.,]\d+)?)/);
-    if (accMatch) carData.stats.acceleration = parseFloat(accMatch.replace(',', '.'));
+    if (accMatch) {
+        carData.stats.acceleration = parseFloat(accMatch[1].replace(',', '.'));
+    }
 
     return carData;
 }
-// Fonction pour générer le graphique Radar initial
+
+// ==========================================
+// 5. INTÉGRATION ET RENDU CHART.JS (RADAR)
+// ==========================================
 function initDuelChart() {
     const chartCtx = document.getElementById('duelChart').getContext('2d');
     
@@ -95,8 +106,8 @@ function initDuelChart() {
                     borderWidth: 2
                 },
                 {
-                    label: 'Joueur (En attente de scan)',
-                    data:,
+                    label: 'Joueur (En attente...)',
+                    data: [0, 0, 0, 0], // Tableau initialisé proprement sans valeurs vides
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgba(54, 162, 235, 1)',
                     borderWidth: 2
@@ -105,54 +116,51 @@ function initDuelChart() {
         },
         options: {
             responsive: true,
-            scales: { r: { suggestedMin: 0, suggestedMax: 400 } }
+            scales: {
+                r: {
+                    suggestedMin: 0,
+                    suggestedMax: 400
+                }
+            }
         }
     });
 }
 
-// Fonction pour mettre à jour le graphique avec la nouvelle voiture
 function updateChartWithScannedCar(carData) {
     if (!duelChart) return;
 
-    // Harmonisation des échelles pour le graphique (ex: 1500kg -> 150, et 4.5s -> 45)
     const normalizedStats = [
         carData.stats.horsepower,
         carData.stats.topSpeed,
-        carData.stats.weight / 10,
-        carData.stats.acceleration * 10
+        carData.stats.weight / 10,       
+        carData.stats.acceleration * 10   
     ];
 
-    // On remplace le nom et les données du joueur (dataset numéro 1)
-    duelChart.data.datasets.label = carData.name;
-    duelChart.data.datasets.data = normalizedStats;
+    // Correction des index cibles du dataset Joueur (index 1)
+    duelChart.data.datasets[1].label = carData.name;
+    duelChart.data.datasets[1].data = normalizedStats;
     
-    // On demande à Chart.js de se redessiner
     duelChart.update();
 }
-// Lancement automatique au chargement de la page
+
+// ==========================================
+// 6. ÉVÉNEMENTS & ÉCOUTEURS
+// ==========================================
 window.addEventListener('DOMContentLoaded', () => {
-    startCamera();
-    initDuelChart();
+    initDuelChart(); // On lance d'abord le graphique
+    startCamera();   // Puis on appelle la caméra
 });
 
-// Événement clic sur le bouton de capture
 document.getElementById('btn-scan').addEventListener('click', async () => {
     const rawText = await scanCard();
-    
     if (rawText) {
         const playerCar = parseCarData(rawText);
-        
-        // Sécurité si le scan n'a trouvé aucun chiffre
         if (playerCar.stats.horsepower === 0 && playerCar.stats.topSpeed === 0) {
-            scanStatus.innerText = "Statut : Scan fini, mais illisible. Réessayez.";
+            scanStatus.innerText = "Statut : Carte illisible.";
             return;
         }
-
-        // Envoi au graphique
         updateChartWithScannedCar(playerCar);
-        
-        // Mise à jour des textes
         scanStatus.innerText = "Statut : Graphique mis à jour !";
-        carTitle.innerText = `Voiture : ${playerCar.name}`;
+        carTitle.innerText = `Voiture scannée : ${playerCar.name}`;
     }
 });
